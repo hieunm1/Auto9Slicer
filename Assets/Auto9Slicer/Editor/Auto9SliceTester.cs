@@ -15,10 +15,25 @@ namespace Auto9Slicer
         public bool CreateBackup => createBackup;
         [SerializeField] private bool createBackup = true;
 
-        public void Run()
+        public void RunDirectory()
         {
-            var directoryPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(this));
+            // var directoryPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(this));
+            foreach (var dir in options.directories)
+            {
+                if (dir == null) continue;
+
+                var path = AssetDatabase.GetAssetPath(dir);
+                Debug.Log(path);
+                RunDirectory(path);
+            }
+
+            AssetDatabase.Refresh();
+        }
+
+        protected void RunDirectory(string directoryPath)
+        {
             if (directoryPath == null) throw new Exception($"directoryPath == null");
+            if (Directory.Exists(directoryPath) == false) return;
 
             var fullDirectoryPath = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? "", directoryPath);
             var targets = Directory.GetFiles(fullDirectoryPath)
@@ -30,38 +45,67 @@ namespace Auto9Slicer
                 .Where(x => x.Item2 != null)
                 .ToArray();
 
+            var backupDirPath = Path.Combine(Directory.GetParent(directoryPath).FullName, Path.GetFileName(directoryPath) + "_Backup");
+            if (Directory.Exists(backupDirPath) == false)
+            {
+                Directory.CreateDirectory(backupDirPath);
+            }
+
             foreach (var target in targets)
             {
-                var importer = AssetImporter.GetAtPath(target.Path);
-                if (importer is TextureImporter textureImporter)
-                {
-                    if (textureImporter.spriteBorder != Vector4.zero) continue;
-                    var fullPath = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? "", target.Path);
-                    var bytes = File.ReadAllBytes(fullPath);
+                SliceTexture(target.Path, backupDirPath);
+            }
+        }
 
-                    // バックアップ
-                    if (CreateBackup)
-                    {
-                        var fileName = Path.GetFileNameWithoutExtension(fullPath);
-                        File.WriteAllBytes(Path.Combine(Path.GetDirectoryName(fullPath) ?? "", fileName + ".original" + Path.GetExtension(fullPath)), bytes);
-                    }
+        public void RunTextures()
+        {
+            var assetPath = AssetDatabase.GetAssetPath(this);
+            var backupDirPath = Path.Combine(Path.GetDirectoryName(assetPath), Path.GetFileNameWithoutExtension(assetPath) + "_Backup");
+            if (Directory.Exists(backupDirPath) == false)
+            {
+                Directory.CreateDirectory(backupDirPath);
+            }
 
-                    // importerのreadable設定に依らずに読み込むために直接読む
-                    var targetTexture = new Texture2D(2, 2);
-                    targetTexture.LoadImage(bytes);
+            foreach (var tex in options.textures)
+            {
+                if (tex == null) continue;
 
-                    var slicedTexture = Slicer.Slice(targetTexture, Options);
-                    textureImporter.textureType = TextureImporterType.Sprite;
-                    textureImporter.spriteBorder = slicedTexture.Border.ToVector4();
-                    if (fullPath.EndsWith(".png")) File.WriteAllBytes(fullPath, slicedTexture.Texture.EncodeToPNG());
-                    if (fullPath.EndsWith(".jpg")) File.WriteAllBytes(fullPath, slicedTexture.Texture.EncodeToJPG());
-                    if (fullPath.EndsWith(".jpeg")) File.WriteAllBytes(fullPath, slicedTexture.Texture.EncodeToJPG());
-
-                    Debug.Log($"Auto 9Slice {Path.GetFileName(target.Path)} = {textureImporter.spriteBorder}");
-                }
+                var path = AssetDatabase.GetAssetPath(tex);
+                SliceTexture(path, backupDirPath);
             }
 
             AssetDatabase.Refresh();
+        }
+
+        protected void SliceTexture(string path, string backupDirPath)
+        {
+            var importer = AssetImporter.GetAtPath(path);
+            if (importer is TextureImporter textureImporter)
+            {
+                if (textureImporter.spriteBorder != Vector4.zero) return;
+                var fullPath = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? "", path);
+                var bytes = File.ReadAllBytes(fullPath);
+
+                // バックアップ
+                if (CreateBackup)
+                {
+                    var fileName = Path.GetFileNameWithoutExtension(fullPath);
+                    File.WriteAllBytes(Path.Combine(backupDirPath, fileName + ".original" + Path.GetExtension(fullPath)), bytes);
+                }
+
+                // importerのreadable設定に依らずに読み込むために直接読む
+                var targetTexture = new Texture2D(2, 2);
+                targetTexture.LoadImage(bytes);
+
+                var slicedTexture = Slicer.Slice(targetTexture, Options);
+                textureImporter.textureType = TextureImporterType.Sprite;
+                textureImporter.spriteBorder = slicedTexture.Border.ToVector4();
+                if (fullPath.EndsWith(".png")) File.WriteAllBytes(fullPath, slicedTexture.Texture.EncodeToPNG());
+                if (fullPath.EndsWith(".jpg")) File.WriteAllBytes(fullPath, slicedTexture.Texture.EncodeToJPG());
+                if (fullPath.EndsWith(".jpeg")) File.WriteAllBytes(fullPath, slicedTexture.Texture.EncodeToJPG());
+
+                Debug.Log($"Auto 9Slice {Path.GetFileName(path)} = {textureImporter.spriteBorder}");
+            }
         }
     }
 
@@ -72,7 +116,16 @@ namespace Auto9Slicer
         {
             base.OnInspectorGUI();
             EditorGUILayout.Space(20);
-            if (GUILayout.Button("Run")) ((Auto9SliceTester) target).Run();
+
+            if (GUILayout.Button("Run Directories"))
+            {
+                ((Auto9SliceTester)target).RunDirectory();
+            }
+
+            if (GUILayout.Button("Run Textures"))
+            {
+                ((Auto9SliceTester)target).RunTextures();
+            }
         }
     }
 }
