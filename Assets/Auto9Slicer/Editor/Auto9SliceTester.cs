@@ -45,7 +45,7 @@ namespace Auto9Slicer
                 .Where(x => x.Item2 != null)
                 .ToArray();
 
-            var backupDirPath = Path.Combine(Directory.GetParent(directoryPath).FullName, Path.GetFileName(directoryPath) + "_Backup");
+            var backupDirPath = Path.Combine(Directory.GetParent(directoryPath).FullName, Path.GetFileName(directoryPath) + "_9SliceBackup");
             if (Directory.Exists(backupDirPath) == false)
             {
                 Directory.CreateDirectory(backupDirPath);
@@ -60,7 +60,7 @@ namespace Auto9Slicer
         public void RunTextures()
         {
             var assetPath = AssetDatabase.GetAssetPath(this);
-            var backupDirPath = Path.Combine(Path.GetDirectoryName(assetPath), Path.GetFileNameWithoutExtension(assetPath) + "_Backup");
+            var backupDirPath = Path.Combine(Path.GetDirectoryName(assetPath), Path.GetFileNameWithoutExtension(assetPath) + "_9SliceBackup");
             if (Directory.Exists(backupDirPath) == false)
             {
                 Directory.CreateDirectory(backupDirPath);
