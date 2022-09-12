@@ -86,6 +86,13 @@ namespace Auto9Slicer
                 var fullPath = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? "", path);
                 var bytes = File.ReadAllBytes(fullPath);
 
+                // importerのreadable設定に依らずに読み込むために直接読む
+                var targetTexture = new Texture2D(2, 2);
+                targetTexture.LoadImage(bytes);
+
+                var slicedTexture = Slicer.Slice(targetTexture, Options);
+                if (slicedTexture.Texture == null) return;
+
                 // バックアップ
                 if (CreateBackup)
                 {
@@ -93,11 +100,6 @@ namespace Auto9Slicer
                     File.WriteAllBytes(Path.Combine(backupDirPath, fileName + ".original" + Path.GetExtension(fullPath)), bytes);
                 }
 
-                // importerのreadable設定に依らずに読み込むために直接読む
-                var targetTexture = new Texture2D(2, 2);
-                targetTexture.LoadImage(bytes);
-
-                var slicedTexture = Slicer.Slice(targetTexture, Options);
                 textureImporter.textureType = TextureImporterType.Sprite;
                 textureImporter.spriteBorder = slicedTexture.Border.ToVector4();
                 if (fullPath.EndsWith(".png")) File.WriteAllBytes(fullPath, slicedTexture.Texture.EncodeToPNG());

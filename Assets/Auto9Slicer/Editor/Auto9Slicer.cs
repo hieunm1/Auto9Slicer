@@ -39,6 +39,9 @@ namespace Auto9Slicer
 
 				var skipX = (xStart == 0 && xEnd == 0);
 				var skipY = (yStart == 0 && yEnd == 0);
+
+				if (skipX && skipY) return new SlicedTexture(null, new Border(0, 0, 0, 0));
+
 				var output = GenerateSlicedTexture(xStart, xEnd, yStart, yEnd, skipX, skipY);
 
 				var left = xStart;
