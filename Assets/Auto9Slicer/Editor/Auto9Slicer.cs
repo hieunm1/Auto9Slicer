@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using UnityEngine;
 
 namespace Auto9Slicer
@@ -40,7 +41,13 @@ namespace Auto9Slicer
 				var skipX = (xStart == 0 && xEnd == 0);
 				var skipY = (yStart == 0 && yEnd == 0);
 
-				if (skipX && skipY) return new SlicedTexture(null, new Border(0, 0, 0, 0));
+				if (skipX && skipY) {
+					return new SlicedTexture(null, new Border(0, 0, 0, 0));
+				}
+
+				if ((xEnd - xStart) * (yEnd - yStart) < _options.MinCropSize) {
+					return new SlicedTexture(null, new Border(0, 0, 0, 0));
+				}
 
 				var output = GenerateSlicedTexture(xStart, xEnd, yStart, yEnd, skipX, skipY);
 
